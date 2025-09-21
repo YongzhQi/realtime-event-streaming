@@ -1,0 +1,153 @@
+version: '3.8'
+
+services:
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: kafka
+    environment:
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,EXTERNAL://:9093,CONTROLLER://:29093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9093
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:29093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_CFG_LOG_RETENTION_HOURS=24
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    volumes:
+      - kafka_data:/opt/bitnami/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--bootstrap-server", "kafka:9092", "--list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  flink-jobmanager:
+    image: flink:1.19
+    container_name: flink-jobmanager
+    command: jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+        jobmanager.memory.process.size: 1024m
+        taskmanager.memory.process.size: 1024m
+        taskmanager.numberOfTaskSlots: 2
+        parallelism.default: 1
+        metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+        metrics.reporter.prom.port: 9249
+    ports:
+      - "8081:8081"
+      - "9249:9249"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - flink_data:/opt/flink/data
+
+  flink-taskmanager:
+    image: flink:1.19
+    container_name: flink-taskmanager
+    command: taskmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.memory.process.size: 1024m
+        taskmanager.numberOfTaskSlots: 2
+        metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+        metrics.reporter.prom.port: 9250
+    ports:
+      - "9250:9250"
+    depends_on:
+      - flink-jobmanager
+    volumes:
+      - flink_data:/opt/flink/data
+    deploy:
+      resources:
+        limits:
+          memory: 1200m
+        reservations:
+          memory: 1024m
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24
+    container_name: clickhouse
+    environment:
+      - CLICKHOUSE_DB=rt
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - ./sql:/docker-entrypoint-initdb.d
+      - clickhouse_data:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  superset:
+    image: apache/superset:latest
+    container_name: superset
+    environment:
+      - SUPERSET_LOAD_EXAMPLES=no
+      - SUPERSET_SECRET_KEY=your_secret_key_here
+    ports:
+      - "8088:8088"
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    volumes:
+      - superset_data:/app/superset_home
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - flink-jobmanager
+      - flink-taskmanager
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+
+volumes:
+  kafka_data:
+  flink_data:
+  clickhouse_data:
+  superset_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  default:
+    name: realtime-pipeline

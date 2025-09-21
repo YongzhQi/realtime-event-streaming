@@ -1,0 +1,104 @@
+# Real-Time Event Streaming Pipeline .gitignore
+
+# Exclude completion/summary files
+COMPLETION_SUMMARY.md
+CURRENT_METRICS.md
+
+# Python virtual environment
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+
+# Java/Maven build artifacts
+flink-job/target/
+flink-job/.idea/
+flink-job/*.iml
+flink-job/.settings/
+flink-job/.project
+flink-job/.classpath
+
+# Docker volumes and data
+kafka_data/
+flink_data/
+clickhouse_data/
+superset_data/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Configuration with sensitive data (if any)
+.env
+.env.local
+.env.*.local
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+node_modules/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Runtime JAR files (keep source, exclude built JARs)
+*.jar
+!flink-job/lib/*.jar
+
+# Superset specific
+superset/superset_home/
+superset/.superset
+superset/superset.db
+
+# Grafana data
+grafana/data/
+
+# Prometheus data
+prometheus/data/
