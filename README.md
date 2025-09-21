@@ -1,11 +1,11 @@
 # Real-Time Event Streaming Pipeline
 
-A comprehensive real-time analytics pipeline that processes web click events with sub-second query latency. This project demonstrates modern streaming architecture using Kafka, Apache Flink, ClickHouse, and visualization tools.
+A comprehensive real-time analytics pipeline that processes web click events with sub-second query latency. This project demonstrates modern streaming architecture using Kafka, Apache Flink, and ClickHouse.
 
 ## Architecture Overview
 
 ```
-Web Events → Kafka → Flink → ClickHouse → Superset
+Web Events → Kafka → Flink → ClickHouse
 ```
 
 ### Components
@@ -13,7 +13,6 @@ Web Events → Kafka → Flink → ClickHouse → Superset
 - **Apache Kafka**: Event streaming platform for ingesting click events
 - **Apache Flink**: Stream processing engine for real-time aggregations
 - **ClickHouse**: OLAP database for fast analytical queries
-- **Apache Superset**: Business intelligence and visualization
 - **Python Producer**: Synthetic event generator
 
 ## Quick Start
@@ -36,7 +35,6 @@ This will start all services:
 - Kafka: `localhost:9092`
 - Flink Web UI: `http://localhost:8081`
 - ClickHouse: `localhost:8123` (HTTP), `localhost:9000` (Native)
-- Superset: `http://localhost:8088`
 
 ### 2. Wait for Services to be Ready
 
@@ -69,12 +67,15 @@ pip install -r requirements.txt
 python produce.py --rate 100
 ```
 
-### 5. Access Dashboards
+### 5. Access Web UIs
 
-#### Superset (BI Dashboard)
-1. Go to `http://localhost:8088`
-2. Login: `admin` / `admin`
-3. Follow setup instructions in `superset/README.md`
+#### Flink Web UI (Job Monitoring)
+1. Go to `http://localhost:8081`
+2. Monitor job status, throughput, and resource usage
+
+#### ClickHouse (Query Interface)
+1. Access via HTTP: `http://localhost:8123`
+2. Or connect with ClickHouse client on port `9000`
 
 ## Data Flow
 
@@ -102,7 +103,7 @@ python produce.py --rate 100
 3. **Storage**: Results written to ClickHouse tables:
    - `rt.clicks_raw`: Individual events
    - `rt.page_minute_agg`: Windowed aggregations
-4. **Visualization**: Real-time dashboards in Superset
+4. **Analysis**: Query data directly in ClickHouse for real-time insights
 
 ## Development
 
@@ -120,7 +121,7 @@ realtime-event-streaming/
 │   └── requirements.txt
 ├── sql/                       # ClickHouse schema
 │   └── clickhouse_tables.sql
-└── superset/                  # BI configuration
+└── docs/                      # Documentation
     └── README.md
 ```
 
@@ -296,4 +297,3 @@ docker exec kafka kafka-consumer-groups.sh --bootstrap-server kafka:9092 \
 - [Apache Flink Documentation](https://flink.apache.org/docs/)
 - [ClickHouse Documentation](https://clickhouse.com/docs/)
 - [Kafka Documentation](https://kafka.apache.org/documentation/)
-- [Superset Documentation](https://superset.apache.org/docs/)
