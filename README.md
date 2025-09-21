@@ -5,9 +5,7 @@ A comprehensive real-time analytics pipeline that processes web click events wit
 ## Architecture Overview
 
 ```
-Web Events → Kafka → Flink → ClickHouse → Superset/Grafana
-                ↓
-           Prometheus → Grafana (Monitoring)
+Web Events → Kafka → Flink → ClickHouse → Superset
 ```
 
 ### Components
@@ -16,7 +14,6 @@ Web Events → Kafka → Flink → ClickHouse → Superset/Grafana
 - **Apache Flink**: Stream processing engine for real-time aggregations
 - **ClickHouse**: OLAP database for fast analytical queries
 - **Apache Superset**: Business intelligence and visualization
-- **Prometheus + Grafana**: Monitoring and observability
 - **Python Producer**: Synthetic event generator
 
 ## Quick Start
@@ -40,8 +37,6 @@ This will start all services:
 - Flink Web UI: `http://localhost:8081`
 - ClickHouse: `localhost:8123` (HTTP), `localhost:9000` (Native)
 - Superset: `http://localhost:8088`
-- Prometheus: `http://localhost:9090`
-- Grafana: `http://localhost:3000`
 
 ### 2. Wait for Services to be Ready
 
@@ -81,11 +76,6 @@ python produce.py --rate 100
 2. Login: `admin` / `admin`
 3. Follow setup instructions in `superset/README.md`
 
-#### Grafana (System Monitoring)
-1. Go to `http://localhost:3000`
-2. Login: `admin` / `admin`
-3. Import Flink dashboard from `docker/grafana/dashboards/`
-
 ## Data Flow
 
 ### Event Schema
@@ -112,7 +102,7 @@ python produce.py --rate 100
 3. **Storage**: Results written to ClickHouse tables:
    - `rt.clicks_raw`: Individual events
    - `rt.page_minute_agg`: Windowed aggregations
-4. **Visualization**: Real-time dashboards in Superset and Grafana
+4. **Visualization**: Real-time dashboards in Superset
 
 ## Development
 
@@ -121,9 +111,7 @@ python produce.py --rate 100
 ```
 realtime-event-streaming/
 ├── docker/                    # Docker infrastructure
-│   ├── docker-compose.yml
-│   ├── prometheus/
-│   └── grafana/
+│   └── docker-compose.yml
 ├── flink-job/                 # Flink streaming application
 │   ├── pom.xml
 │   └── src/main/java/com/example/
@@ -152,10 +140,9 @@ realtime-event-streaming/
 - **Materialized Views**: Real-time aggregations
 
 #### Monitoring & Observability
-- **Flink Metrics**: Exposed via Prometheus
-- **Dashboard Templates**: Pre-built Grafana dashboards
-- **Health Checks**: Container health monitoring
-- **Log Aggregation**: Centralized logging
+- **Flink Web UI**: Real-time job monitoring
+- **ClickHouse Queries**: Performance metrics via SQL
+- **Docker Health Checks**: Container health monitoring
 
 ## Performance Tuning
 
@@ -212,21 +199,12 @@ services:
 ### Monitoring
 
 #### Key Metrics to Watch
-- **Kafka**: Consumer lag, partition distribution
-- **Flink**: Records/sec, watermark lag, backpressure
-- **ClickHouse**: Query duration, disk usage, merge rate
+- **Kafka**: Topic throughput, message counts
+- **Flink**: Records/sec, task status, checkpoints
+- **ClickHouse**: Query duration, row counts, disk usage
 
-#### Alerts Configuration
-```yaml
-# Prometheus alerts
-- alert: FlinkHighBackpressure
-  expr: flink_taskmanager_job_task_busyTimeMsPerSecond > 800
-  for: 2m
-  
-- alert: KafkaConsumerLag
-  expr: kafka_consumer_lag_sum > 10000
-  for: 1m
-```
+#### Available Metrics
+Current pipeline handles ~98 events with 4.7s avg / 9s P95 latency
 
 ### Backup & Recovery
 
@@ -319,31 +297,3 @@ docker exec kafka kafka-consumer-groups.sh --bootstrap-server kafka:9092 \
 - [ClickHouse Documentation](https://clickhouse.com/docs/)
 - [Kafka Documentation](https://kafka.apache.org/documentation/)
 - [Superset Documentation](https://superset.apache.org/docs/)
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
-## Next Steps
-
-After running the basic pipeline, consider these enhancements:
-
-1. **Schema Evolution**: Add Avro/Protobuf for schema management
-2. **Multi-Region**: Deploy across multiple data centers
-3. **Machine Learning**: Add real-time ML predictions
-4. **Data Quality**: Implement data validation and cleansing
-5. **Advanced Analytics**: Add complex event processing (CEP)
-6. **Security**: Add authentication and encryption
-7. **Cost Optimization**: Implement tiered storage strategies
-
-Happy streaming!
